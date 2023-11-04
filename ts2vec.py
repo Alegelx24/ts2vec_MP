@@ -127,12 +127,20 @@ class TS2Vec:
                 out2 = self._net(take_per_row(x, crop_offset + crop_left, crop_eright - crop_left))
                 out2 = out2[:, :crop_l]
                 
-                loss = hierarchical_contrastive_loss(
+                hier_loss = hierarchical_contrastive_loss(
                     out1,
                     out2,
                     temporal_unit=self.temporal_unit
                 )
-                
+
+                l2_loss = F.mse_loss(out1, out2)
+
+                alpha=1 
+                beta=0.0
+
+                # The hybrid loss
+                loss = alpha * hier_loss + beta * l2_loss
+        
                 loss.backward()
                 optimizer.step()
                 self.net.update_parameters(self._net)
