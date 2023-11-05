@@ -57,7 +57,7 @@ class TS2Vec:
         self.n_epochs = 0
         self.n_iters = 0
     
-    def fit(self, train_data, n_epochs=None, n_iters=None, verbose=False):
+    def fit(self, train_data,mp_data=None, n_epochs=None, n_iters=None, verbose=False):
         ''' Training the TS2Vec model.
         
         Args:
@@ -87,7 +87,20 @@ class TS2Vec:
         
         train_dataset = TensorDataset(torch.from_numpy(train_data).to(torch.float))
         train_loader = DataLoader(train_dataset, batch_size=min(self.batch_size, len(train_dataset)), shuffle=True, drop_last=True)
+
+        '''
+        matrix_profile_tensor = torch.from_numpy(mp_data).float().to(self.device)
+        matrix_profile_dataset = TensorDataset(matrix_profile_tensor)
+        matrix_profile_loader = DataLoader(matrix_profile_dataset, batch_size=self.batch_size, shuffle=True)
+        '''
         
+        print("this is the matrix profile")
+
+        
+
+
+
+
         optimizer = torch.optim.AdamW(self._net.parameters(), lr=self.lr)
         
         loss_log = []
@@ -106,6 +119,9 @@ class TS2Vec:
                     break
                 
                 x = batch[0]
+            
+               
+
                 if self.max_train_length is not None and x.size(1) > self.max_train_length:
                     window_offset = np.random.randint(x.size(1) - self.max_train_length + 1)
                     x = x[:, window_offset : window_offset + self.max_train_length]
@@ -135,8 +151,8 @@ class TS2Vec:
 
                 l2_loss = F.mse_loss(out1, out2)
 
-                alpha=1 
-                beta=0.0
+                alpha=0.8 
+                beta=0.2
 
                 # The hybrid loss
                 loss = alpha * hier_loss + beta * l2_loss

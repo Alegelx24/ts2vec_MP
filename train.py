@@ -119,6 +119,7 @@ if __name__ == '__main__':
     )
     loss_log = model.fit(
         train_data,
+        None,
         n_epochs=args.epochs,
         n_iters=args.iters,
         verbose=True
