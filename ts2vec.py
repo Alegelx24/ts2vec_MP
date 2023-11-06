@@ -98,9 +98,6 @@ class TS2Vec:
 
         
 
-
-
-
         optimizer = torch.optim.AdamW(self._net.parameters(), lr=self.lr)
         
         loss_log = []
