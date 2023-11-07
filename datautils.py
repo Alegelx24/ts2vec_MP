@@ -202,4 +202,4 @@ def gen_ano_train_data(all_train_data):
 
 def load_matrix_profile(name):
     res = pkl_load(f'datasets/{name}.pkl')
-    return res["left_mp"], res["all_timestamp"]
+    return res[0]['left_MP'], res[0]['timestamp']

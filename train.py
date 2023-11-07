@@ -77,6 +77,8 @@ if __name__ == '__main__':
     elif args.loader == 'anomaly':
         task_type = 'anomaly_detection'
         all_train_data, all_train_labels, all_train_timestamps, all_test_data, all_test_labels, all_test_timestamps, delay = datautils.load_anomaly(args.dataset)
+        mp, mp_timestamp = datautils.load_matrix_profile("mp")
+        matrix_profile_data=[mp, mp_timestamp]
         train_data = datautils.gen_ano_train_data(all_train_data)
         
     elif args.loader == 'anomaly_coldstart':
@@ -119,7 +121,7 @@ if __name__ == '__main__':
     )
     loss_log = model.fit(
         train_data,
-        None,
+        matrix_profile_data,
         n_epochs=args.epochs,
         n_iters=args.iters,
         verbose=True

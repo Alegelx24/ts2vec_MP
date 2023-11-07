@@ -57,7 +57,7 @@ class TS2Vec:
         self.n_epochs = 0
         self.n_iters = 0
     
-    def fit(self, train_data,mp_data=None, n_epochs=None, n_iters=None, verbose=False):
+    def fit(self, train_data, mp_data=None, n_epochs=None, n_iters=None, verbose=False):
         ''' Training the TS2Vec model.
         
         Args:
@@ -70,7 +70,9 @@ class TS2Vec:
             loss_log: a list containing the training losses on each epoch.
         '''
         assert train_data.ndim == 3
-        
+
+
+
         if n_iters is None and n_epochs is None:
             n_iters = 200 if train_data.size <= 100000 else 600  # default param for n_iters
         
@@ -87,6 +89,7 @@ class TS2Vec:
         
         train_dataset = TensorDataset(torch.from_numpy(train_data).to(torch.float))
         train_loader = DataLoader(train_dataset, batch_size=min(self.batch_size, len(train_dataset)), shuffle=True, drop_last=True)
+
 
         '''
         matrix_profile_tensor = torch.from_numpy(mp_data).float().to(self.device)
