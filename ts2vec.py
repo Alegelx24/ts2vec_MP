@@ -94,7 +94,6 @@ class TS2Vec:
         matrix_profile_loader = DataLoader(matrix_profile_dataset, batch_size=self.batch_size, shuffle=True)
         '''
         
-        print("this is the matrix profile")
 
         
 

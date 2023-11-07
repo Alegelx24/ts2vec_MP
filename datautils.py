@@ -188,6 +188,7 @@ def load_anomaly(name):
            res['delay']
 
 
+
 def gen_ano_train_data(all_train_data):
     maxl = np.max([ len(all_train_data[k]) for k in all_train_data ])
     pretrain_data = []
@@ -196,3 +197,9 @@ def gen_ano_train_data(all_train_data):
         pretrain_data.append(train_data)
     pretrain_data = np.expand_dims(np.stack(pretrain_data), 2)
     return pretrain_data
+
+#Matrix profile support
+
+def load_matrix_profile(name):
+    res = pkl_load(f'datasets/{name}.pkl')
+    return res["left_mp"], res["all_timestamp"]
