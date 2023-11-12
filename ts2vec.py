@@ -94,28 +94,21 @@ class TS2Vec:
         if mp_data is not None:
             mp_data_tensor = torch.from_numpy(np.array(mp_data)).float().to(self.device)
             mp_dataset = TensorDataset(mp_data_tensor)
-
-        
-        '''
-        matrix_profile_tensor = torch.from_numpy(mp_data).float().to(self.device)
-        matrix_profile_dataset = TensorDataset(matrix_profile_tensor)
-        matrix_profile_loader = DataLoader(matrix_profile_dataset, batch_size=self.batch_size, shuffle=True)
-        '''
-        
-
         
 
         optimizer = torch.optim.AdamW(self._net.parameters(), lr=self.lr)
         
         loss_log = []
-        
+    
+
         while True:
             if n_epochs is not None and self.n_epochs >= n_epochs:
                 break
             
             cum_loss = 0
             n_epoch_iters = 0
-            
+            batch_number=0
+
             interrupted = False
             for batch in train_loader:
                 if n_iters is not None and self.n_iters >= n_iters:
@@ -123,15 +116,17 @@ class TS2Vec:
                     break
                 
                 x = batch[0]
-            
-               
+                batch_number+=1
 
                 if self.max_train_length is not None and x.size(1) > self.max_train_length:
                     window_offset = np.random.randint(x.size(1) - self.max_train_length + 1)
                     x = x[:, window_offset : window_offset + self.max_train_length]
+
                 x = x.to(self.device)
+
                 
                 ts_l = x.size(1)
+
                 crop_l = np.random.randint(low=2 ** (self.temporal_unit + 1), high=ts_l+1)
                 crop_left = np.random.randint(ts_l - crop_l + 1)
                 crop_right = crop_left + crop_l
@@ -140,8 +135,13 @@ class TS2Vec:
                 crop_offset = np.random.randint(low=-crop_eleft, high=ts_l - crop_eright + 1, size=x.size(0))
 
                 #MATRIX PROFILE INDEXES
-                start_indices_out1 = crop_offset
-                start_indices_out2 = crop_offset + crop_left
+
+                batch_indices = batch_number*840
+
+                start_indices_out1 = crop_left + batch_indices
+                start_indices_out2 = start_indices_out1 + crop_offset
+
+                print(start_indices_out1)
                 
                 optimizer.zero_grad()
                 
@@ -157,23 +157,31 @@ class TS2Vec:
                     temporal_unit=self.temporal_unit
                 )
 
-                l2_loss = F.mse_loss(out1, out2)
 
                 alpha=0.8 
                 beta=0.2
 
                 #MATRIX PROFILE LOSS
+                
+                
 
                 if mp_data is not None:
                     # Assuming mp_data is a tensor of the same length as the time series
                     # and contains the Matrix Profile values at the corresponding indices.
-                    mp_segment_out1 = mp_data[0][start_indices_out1[0].item() : start_indices_out1[0].item() + crop_l]
-                    mp_segment_out2 = mp_data[0][start_indices_out1[0].item() : start_indices_out1[0].item() + crop_l]
+                    mp_segment_out1 = mp_data[0][start_indices_out1 : start_indices_out1 + crop_l]
+                    mp_segment_out2 = mp_data[0][start_indices_out2[0] : start_indices_out2[0] + crop_l]
+
                     # Now use these segments in your custom loss calculation
+                
 
                 print(" ECCO IL SEGMENTOOOOOO")
+                l2_loss = F.mse_loss(mp_segment_out1, mp_segment_out2)
 
-                print(len(mp_segment_out1))
+                #LAVORAREEEEEEEEEE QUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+                #CONSIDERARE LA LUNGHEZZA DEI DUE SEGMENTI E COME UTILIZZARLI
+
+                #print(len(mp_segment_out1))
+                
 
                 # The hybrid loss
                 loss = alpha * hier_loss + beta * l2_loss
