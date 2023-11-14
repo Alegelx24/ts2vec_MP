@@ -6,6 +6,8 @@ from models import TSEncoder
 from models.losses import hierarchical_contrastive_loss
 from utils import take_per_row, split_with_nan, centerize_vary_length_series, torch_pad_nan
 import math
+import heapq
+
 
 class TS2Vec:
     '''The TS2Vec model'''
@@ -138,10 +140,9 @@ class TS2Vec:
 
                 batch_indices = batch_number*840
 
-                start_indices_out1 = crop_left + batch_indices
-                start_indices_out2 = start_indices_out1 + crop_offset
+                start_indices_out1 = crop_left + batch_indices + 5000
+                start_indices_out2 = start_indices_out1 + crop_offset + 5000
 
-                print(start_indices_out1)
                 
                 optimizer.zero_grad()
                 
@@ -158,8 +159,8 @@ class TS2Vec:
                 )
 
 
-                alpha=0.8 
-                beta=0.2
+                alpha=0.5 
+                beta=0.5
 
                 #MATRIX PROFILE LOSS
                 
@@ -170,21 +171,20 @@ class TS2Vec:
                     # and contains the Matrix Profile values at the corresponding indices.
                     mp_segment_out1 = mp_data[0][start_indices_out1 : start_indices_out1 + crop_l]
                     mp_segment_out2 = mp_data[0][start_indices_out2[0] : start_indices_out2[0] + crop_l]
+                    top_k = heapq.nlargest(5, mp_segment_out1)
+                    mp_segment_out1 = torch.tensor(mp_segment_out1).float().to(self.device)
+                    mp_segment_out2 = torch.tensor(mp_segment_out2).float().to(self.device)
 
-                    # Now use these segments in your custom loss calculation
+
                 
 
-                print(" ECCO IL SEGMENTOOOOOO")
                 l2_loss = F.mse_loss(mp_segment_out1, mp_segment_out2)
 
-                #LAVORAREEEEEEEEEE QUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-                #CONSIDERARE LA LUNGHEZZA DEI DUE SEGMENTI E COME UTILIZZARLI
 
-                #print(len(mp_segment_out1))
-                
+                cumulative_mp_loss= sum(top_k)/5
 
                 # The hybrid loss
-                loss = alpha * hier_loss + beta * l2_loss
+                loss = alpha * hier_loss + beta * cumulative_mp_loss
         
                 loss.backward()
                 optimizer.step()
