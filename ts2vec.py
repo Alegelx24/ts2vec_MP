@@ -161,15 +161,14 @@ class TS2Vec:
 
 
                 alpha=0.5 
-                beta=0.5
+                beta=1-alpha
 
                 #MATRIX PROFILE LOSS
                 
                 
 
                 if mp_data is not None:
-                    # Assuming mp_data is a tensor of the same length as the time series
-                    # and contains the Matrix Profile values at the corresponding indices.
+              
                     mp_segment_out1 = mp_data[0][start_indices_out1 : start_indices_out1 + crop_l]
                     mp_segment_out2 = mp_data[0][start_indices_out2[0] : start_indices_out2[0] + crop_l]
                     top_k = heapq.nlargest(10, mp_segment_out1)
@@ -183,7 +182,7 @@ class TS2Vec:
                 if len(mp_segment_out1) != 0:
                       cumulative_mp_loss= sum(mp_segment_out1)/len(mp_segment_out1)
                 else: 
-                    cumulative_mp_loss=0
+                    cumulative_mp_loss+=0
 
                 # The hybrid loss
                 loss = alpha * hier_loss + beta * cumulative_mp_loss
