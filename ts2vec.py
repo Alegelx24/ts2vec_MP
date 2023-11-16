@@ -172,16 +172,18 @@ class TS2Vec:
                     # and contains the Matrix Profile values at the corresponding indices.
                     mp_segment_out1 = mp_data[0][start_indices_out1 : start_indices_out1 + crop_l]
                     mp_segment_out2 = mp_data[0][start_indices_out2[0] : start_indices_out2[0] + crop_l]
-                    top_k = heapq.nlargest(1, mp_segment_out1)
-                    mp_segment_out1 = torch.tensor(mp_segment_out1).float().to(self.device)
-                    mp_segment_out2 = torch.tensor(mp_segment_out2).float().to(self.device)
-
+                    top_k = heapq.nlargest(10, mp_segment_out1)
+                    #mp_segment_out1 = torch.tensor(mp_segment_out1).float().to(self.device)
+                    #mp_segment_out2 = torch.tensor(mp_segment_out2).float().to(self.device)
 
                 
 
 
-
-                cumulative_mp_loss= sum(top_k)
+                
+                if len(mp_segment_out1) != 0:
+                      cumulative_mp_loss= sum(mp_segment_out1)/len(mp_segment_out1)
+                else: 
+                    cumulative_mp_loss=0
 
                 # The hybrid loss
                 loss = alpha * hier_loss + beta * cumulative_mp_loss
