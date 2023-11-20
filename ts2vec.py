@@ -160,7 +160,7 @@ class TS2Vec:
                 )
 
 
-                alpha=0.5 
+                alpha=1 
                 beta=1-alpha
 
                 #MATRIX PROFILE LOSS
