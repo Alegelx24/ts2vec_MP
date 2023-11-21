@@ -110,6 +110,7 @@ class TS2Vec:
             cum_loss = 0
             n_epoch_iters = 0
             batch_number=0
+            timestamp_count = 0 
 
             interrupted = False
             for batch in train_loader:
@@ -118,7 +119,10 @@ class TS2Vec:
                     break
                 
                 x = batch[0]
+               
                 batch_number+=1
+                timestamp_count += len(batch[0]) * batch[0].size(1)
+
 
                 if self.max_train_length is not None and x.size(1) > self.max_train_length:
                     window_offset = np.random.randint(x.size(1) - self.max_train_length + 1)
@@ -160,7 +164,7 @@ class TS2Vec:
                 )
 
 
-                alpha=1 
+                alpha=0.5 
                 beta=1-alpha
 
                 #MATRIX PROFILE LOSS
@@ -174,13 +178,11 @@ class TS2Vec:
                     top_k = heapq.nlargest(10, mp_segment_out1)
                     #mp_segment_out1 = torch.tensor(mp_segment_out1).float().to(self.device)
                     #mp_segment_out2 = torch.tensor(mp_segment_out2).float().to(self.device)
-
-                
-
+                    mp_segment_mean = sum(mp_data[0][int(timestamp_count):int((timestamp_count+len(batch[0]) * batch[0].size(1)))])/(len(batch[0]) * batch[0].size(1))
 
                 
                 if len(mp_segment_out1) != 0:
-                      cumulative_mp_loss= sum(mp_segment_out1)/len(mp_segment_out1)
+                      cumulative_mp_loss= mp_segment_mean
                 else: 
                     cumulative_mp_loss+=0
 
