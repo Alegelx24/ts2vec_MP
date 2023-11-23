@@ -10,8 +10,8 @@ from sklearn.model_selection import GridSearchCV, train_test_split
 def fit_svm(features, y, MAX_SAMPLES=10000):
     nb_classes = np.unique(y, return_counts=True)[1].shape[0]
     train_size = features.shape[0]
-
-    svm = SVC(C=np.inf, gamma='scale')
+#modified here to testtttttttttttttt
+    svm = SVC(C=1.0, gamma='scale')
     if train_size // nb_classes < 5 or train_size < 50:
         return svm.fit(features, y)
     else:
