@@ -48,6 +48,8 @@ if __name__ == '__main__':
     print('Loading data... ', end='')
     if args.loader == 'UCR':
         task_type = 'classification'
+        matrix_profile_data=None
+
         train_data, train_labels, test_data, test_labels = datautils.load_UCR(args.dataset)
         
     elif args.loader == 'UEA':
@@ -58,6 +60,8 @@ if __name__ == '__main__':
         task_type = 'forecasting'
         data, train_slice, valid_slice, test_slice, scaler, pred_lens, n_covariate_cols = datautils.load_forecast_csv(args.dataset)
         train_data = data[:, train_slice]
+        matrix_profile_data=None
+        
         
     elif args.loader == 'forecast_csv_univar':
         task_type = 'forecasting'
@@ -84,6 +88,8 @@ if __name__ == '__main__':
     elif args.loader == 'anomaly_coldstart':
         task_type = 'anomaly_detection_coldstart'
         all_train_data, all_train_labels, all_train_timestamps, all_test_data, all_test_labels, all_test_timestamps, delay = datautils.load_anomaly(args.dataset)
+        matrix_profile_data=None
+
         train_data, _, _, _ = datautils.load_UCR('FordA')
         
     else:
@@ -119,6 +125,13 @@ if __name__ == '__main__':
         device=device,
         **config
     )
+
+    '''
+    #state_dict = torch.load("/Users/aleg2/Desktop/ts2vec_MP/training/MoteStrain__UCR_lossOk_20231121_192554/model.pkl")
+    state_dict = torch.load("/Users/aleg2/Desktop/ts2vec_MP/training/yahoo_A1__YAHOO_NOLOSS_20231122_115730/model.pkl")
+    model.net.load_state_dict(state_dict)   
+    '''
+
     loss_log = model.fit(
         train_data,
         matrix_profile_data,
