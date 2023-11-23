@@ -74,7 +74,6 @@ class TS2Vec:
         assert train_data.ndim == 3
 
 
-
         if n_iters is None and n_epochs is None:
             n_iters = 200 if train_data.size <= 100000 else 600  # default param for n_iters
         
@@ -164,7 +163,7 @@ class TS2Vec:
                 )
 
 
-                alpha=0.5 
+                alpha=1 
                 beta=1-alpha
 
                 #MATRIX PROFILE LOSS
@@ -180,20 +179,24 @@ class TS2Vec:
                     #mp_segment_out2 = torch.tensor(mp_segment_out2).float().to(self.device)
                     mp_segment_mean = sum(mp_data[0][int(timestamp_count):int((timestamp_count+len(batch[0]) * batch[0].size(1)))])/(len(batch[0]) * batch[0].size(1))
 
-                
-                if len(mp_segment_out1) != 0:
-                      cumulative_mp_loss= mp_segment_mean
-                else: 
-                    cumulative_mp_loss+=0
+                if mp_data is not None:    
+                    if len(mp_segment_out1) != 0:
+                        cumulative_mp_loss= mp_segment_mean
+                    else: 
+                        cumulative_mp_loss+=0
 
                 # The hybrid loss
-                loss = alpha * hier_loss + beta * cumulative_mp_loss
-        
+                # loss = (alpha * hier_loss + beta * cumulative_mp_loss)*0
+                loss = (hier_loss*0)+np.random.randint(500)
+                #loss= (hier_loss)*0 
+                # 
+                #loss = F.l1_loss(out1, out2)            
                 loss.backward()
                 optimizer.step()
                 self.net.update_parameters(self._net)
                     
                 cum_loss += loss.item()
+
                 n_epoch_iters += 1
                 
                 self.n_iters += 1
