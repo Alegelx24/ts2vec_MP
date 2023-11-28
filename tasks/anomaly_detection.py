@@ -2,6 +2,7 @@ import numpy as np
 import time
 from sklearn.metrics import f1_score, precision_score, recall_score
 import bottleneck as bn
+import pandas as pd
 
 # consider delay threshold and missing segments
 def get_range_proba(predict, label, delay=7):
@@ -60,6 +61,11 @@ def eval_ad_result(test_pred_list, test_labels_list, test_timestamps_list, delay
         pred.append(test_pred)
     labels = np.concatenate(labels)
     pred = np.concatenate(pred)
+
+    combined_data = np.column_stack((labels, pred))
+    results_df = pd.DataFrame(combined_data)
+    results_df.to_csv("prediction_random_encoder_00.csv", index=False)
+    
     return {
         'f1': f1_score(labels, pred),
         'precision': precision_score(labels, pred),
@@ -99,6 +105,10 @@ def eval_anomaly_detection(model, all_train_data, all_train_labels, all_train_ti
             sliding_padding=200,
             batch_size=256
         ).squeeze()
+        
+        #full_repr = np.random.rand(*full_repr.shape)
+       
+
         all_train_repr[k] = full_repr[:len(train_data)]
         all_test_repr[k] = full_repr[len(train_data):]
 
@@ -109,6 +119,9 @@ def eval_anomaly_detection(model, all_train_data, all_train_labels, all_train_ti
             sliding_padding=200,
             batch_size=256
         ).squeeze()
+
+        #full_repr_wom = np.random.rand(*full_repr_wom.shape)
+
         all_train_repr_wom[k] = full_repr_wom[:len(train_data)]
         all_test_repr_wom[k] = full_repr_wom[len(train_data):]
         
