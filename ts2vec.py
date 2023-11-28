@@ -7,7 +7,31 @@ from models.losses import hierarchical_contrastive_loss
 from utils import take_per_row, split_with_nan, centerize_vary_length_series, torch_pad_nan
 import math
 import heapq
+import matplotlib.pyplot as plt
+import seaborn as sns
+from torch.utils.tensorboard import SummaryWriter
 
+
+
+def plot_weight_densities(model):
+    for name, param in model.named_parameters():
+        if 'weight' in name:
+            plt.figure(figsize=(10, 5))
+            sns.kdeplot(param.data.cpu().numpy().flatten(), fill=True)
+            plt.title(f'Density Plot of Weights for Layer: {name}')
+            plt.xlabel('Weight Values')
+            plt.ylabel('Density')
+            plt.show()
+
+def plot_weights(model, num_epochs=0):
+    for i, (name, param) in enumerate(model.named_parameters()):
+        if 'weight' in name:
+            plt.figure(figsize=(10, 5))
+            plt.hist(param.data.cpu().numpy().flatten(), bins=100)
+            if num_epochs is None:
+                num_epochs=0
+            plt.title(f'Layer {i} | {name} , Epochs # {num_epochs}')
+            plt.show()
 
 class TS2Vec:
     '''The TS2Vec model'''
@@ -89,7 +113,7 @@ class TS2Vec:
         train_data = train_data[~np.isnan(train_data).all(axis=2).all(axis=1)]
         
         train_dataset = TensorDataset(torch.from_numpy(train_data).to(torch.float))
-        train_loader = DataLoader(train_dataset, batch_size=min(self.batch_size, len(train_dataset)), shuffle=True, drop_last=True)
+        train_loader = DataLoader(train_dataset, batch_size=min(self.batch_size, len(train_dataset)), shuffle=False, drop_last=True)
 
 
         if mp_data is not None:
@@ -98,14 +122,44 @@ class TS2Vec:
         
 
         optimizer = torch.optim.AdamW(self._net.parameters(), lr=self.lr)
+
+        #optimizer = torch.optim.SGD(self._net.parameters(), lr = self.lr)
         
+        #optimizer = torch.optim.Adagrad(self._net.parameters(), lr = self.lr)
+
         loss_log = []
-    
+
+        weights_log = []
+
+        writer = SummaryWriter('./ts2vec')
+
 
         while True:
             if n_epochs is not None and self.n_epochs >= n_epochs:
                 break
             
+            
+            
+            #WEIGHTS VISUALIZATION
+            
+            for name, param in self._net.named_parameters():
+                '''
+                print(name)
+                print(f'Layer: {name}')
+                param_mean = param.data.mean().item()
+                print(f'Mean: {param_mean}')
+                '''
+                epochs= n_epochs
+                if epochs is None : epochs=0
+                writer.add_histogram(name, param, epochs)
+
+                if name == 'feature_extractor.net.10.conv2.conv.weight':  # Replace with the actual name
+                    weights_log.append(param.data.cpu().numpy())
+                    break
+            #plot_weight_densities(self._net)
+            #plot_weights(self._net,n_epochs)
+
+
             cum_loss = 0
             n_epoch_iters = 0
             batch_number=0
@@ -163,12 +217,9 @@ class TS2Vec:
                 )
 
 
-                alpha=1 
-                beta=1-alpha
+                alpha=0 
 
                 #MATRIX PROFILE LOSS
-                
-                
 
                 if mp_data is not None:
               
@@ -186,11 +237,11 @@ class TS2Vec:
                         cumulative_mp_loss+=0
 
                 # The hybrid loss
-                # loss = (alpha * hier_loss + beta * cumulative_mp_loss)*0
-                loss = (hier_loss*0)+np.random.randint(500)
-                #loss= (hier_loss)*0 
-                # 
-                #loss = F.l1_loss(out1, out2)            
+                #loss = (alpha * hier_loss + (1-alpha) * cumulative_mp_loss)
+                #loss = (hier_loss*0)+np.random.randint(500)
+                #loss= (hier_loss)*np.random.randint(-10000,10000)
+                loss=(hier_loss)
+
                 loss.backward()
                 optimizer.step()
                 self.net.update_parameters(self._net)
@@ -207,6 +258,7 @@ class TS2Vec:
             if interrupted:
                 break
             
+            
             cum_loss /= n_epoch_iters
             loss_log.append(cum_loss)
             if verbose:
@@ -215,6 +267,8 @@ class TS2Vec:
             
             if self.after_epoch_callback is not None:
                 self.after_epoch_callback(self, cum_loss)
+
+            #print(weights_log)
             
         return loss_log
     
@@ -262,21 +316,25 @@ class TS2Vec:
             
         return out.cpu()
     
+
+
     def encode(self, data, mask=None, encoding_window=None, causal=False, sliding_length=None, sliding_padding=0, batch_size=None):
-        ''' Compute representations using the model.
-        
-        Args:
-            data (numpy.ndarray): This should have a shape of (n_instance, n_timestamps, n_features). All missing data should be set to NaN.
-            mask (str): The mask used by encoder can be specified with this parameter. This can be set to 'binomial', 'continuous', 'all_true', 'all_false' or 'mask_last'.
-            encoding_window (Union[str, int]): When this param is specified, the computed representation would the max pooling over this window. This can be set to 'full_series', 'multiscale' or an integer specifying the pooling kernel size.
-            causal (bool): When this param is set to True, the future informations would not be encoded into representation of each timestamp.
-            sliding_length (Union[int, NoneType]): The length of sliding window. When this param is specified, a sliding inference would be applied on the time series.
-            sliding_padding (int): This param specifies the contextual data length used for inference every sliding windows.
-            batch_size (Union[int, NoneType]): The batch size used for inference. If not specified, this would be the same batch size as training.
-            
-        Returns:
-            repr: The representations for data.
         '''
+            Compute representations using the model.
+            
+            Args:
+                data (numpy.ndarray): This should have a shape of (n_instance, n_timestamps, n_features). All missing data should be set to NaN.
+                mask (str): The mask used by encoder can be specified with this parameter. This can be set to 'binomial', 'continuous', 'all_true', 'all_false' or 'mask_last'.
+                encoding_window (Union[str, int]): When this param is specified, the computed representation would the max pooling over this window. This can be set to 'full_series', 'multiscale' or an integer specifying the pooling kernel size.
+                causal (bool): When this param is set to True, the future informations would not be encoded into representation of each timestamp.
+                sliding_length (Union[int, NoneType]): The length of sliding window. When this param is specified, a sliding inference would be applied on the time series.
+                sliding_padding (int): This param specifies the contextual data length used for inference every sliding windows.
+                batch_size (Union[int, NoneType]): The batch size used for inference. If not specified, this would be the same batch size as training.
+                
+            Returns:
+                repr: The representations for data.
+        '''
+        
         assert self.net is not None, 'please train or load a net first'
         assert data.ndim == 3
         if batch_size is None:
@@ -359,6 +417,7 @@ class TS2Vec:
         self.net.train(org_training)
         return output.numpy()
     
+    
     def save(self, fn):
         ''' Save the model to a file.
         
@@ -376,3 +435,4 @@ class TS2Vec:
         state_dict = torch.load(fn, map_location=self.device)
         self.net.load_state_dict(state_dict)
     
+ 
