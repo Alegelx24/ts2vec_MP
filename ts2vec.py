@@ -13,15 +13,17 @@ from torch.utils.tensorboard import SummaryWriter
 
 
 
-def plot_weight_densities(model):
+def plot_weight_densities(model, n_epochs):
     for name, param in model.named_parameters():
         if 'weight' in name:
-            plt.figure(figsize=(10, 5))
-            sns.kdeplot(param.data.cpu().numpy().flatten(), fill=True)
-            plt.title(f'Density Plot of Weights for Layer: {name}')
-            plt.xlabel('Weight Values')
-            plt.ylabel('Density')
-            plt.show()
+            if name == 'feature_extractor.net.10.conv2.conv.weight':  # Replace with the actual name
+                plt.figure(figsize=(10, 5))
+                sns.kdeplot(param.data.cpu().numpy().flatten(), fill=True)
+                plt.title(f'Density Plot of Weights for Layer: {name} , Epochs # {n_epochs}')
+                plt.xlabel('Weight Values')
+                plt.ylabel('Density')
+                #code to save the plots in a folder
+                plt.savefig(f'./ts2vec/weights/{name}_{n_epochs}.png')
 
 def plot_weights(model, num_epochs=0):
     for i, (name, param) in enumerate(model.named_parameters()):
@@ -131,7 +133,7 @@ class TS2Vec:
 
         weights_log = []
 
-        writer = SummaryWriter('./ts2vec')
+        #writer = SummaryWriter('./ts2vec')
 
 
         while True:
@@ -141,7 +143,7 @@ class TS2Vec:
             
             
             #WEIGHTS VISUALIZATION
-            
+
             for name, param in self._net.named_parameters():
                 '''
                 print(name)
@@ -151,12 +153,13 @@ class TS2Vec:
                 '''
                 epochs= n_epochs
                 if epochs is None : epochs=0
-                writer.add_histogram(name, param, epochs)
+                #writer.add_histogram(name, param, epochs)
+                #writer.add_histogram(name, param.clone().cpu().data.numpy(), epochs)
 
                 if name == 'feature_extractor.net.10.conv2.conv.weight':  # Replace with the actual name
                     weights_log.append(param.data.cpu().numpy())
                     break
-            #plot_weight_densities(self._net)
+            plot_weight_densities(self._net, self.n_epochs)
             #plot_weights(self._net,n_epochs)
 
 
@@ -241,6 +244,7 @@ class TS2Vec:
                 #loss = (hier_loss*0)+np.random.randint(500)
                 #loss= (hier_loss)*np.random.randint(-10000,10000)
                 loss=(hier_loss)
+
 
                 loss.backward()
                 optimizer.step()
